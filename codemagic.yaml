@@ -1,0 +1,48 @@
+# Codemagic CI: build the iOS app and ship it to TestFlight.
+#
+# BEFORE THIS RUNS, in the Codemagic web UI you must (one-time):
+#   1. Connect this GitHub repo as an app.
+#   2. Teams → Integrations → App Store Connect: add your API key.
+#      Name it EXACTLY "Stix ASC Key" (or change the name below to match).
+#   3. The App Store Connect API key needs an app record with bundle id
+#      com.stixapp.stix (App Store Connect → Apps → +).
+#
+# Build numbers auto-increment per Codemagic build ($BUILD_NUMBER), so every
+# upload is a fresh TestFlight build. The version name comes from pubspec.yaml.
+
+workflows:
+  ios-testflight:
+    name: Stix iOS → TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: Stix ASC Key
+    environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.stixapp.stix
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Set up code signing (automatic via App Store Connect)
+        script: xcode-project use-profiles
+      - name: Install CocoaPods dependencies
+        script: find . -name "Podfile" -execdir pod install \;
+      - name: Build signed IPA
+        script: |
+          flutter build ipa --release \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        # Add external tester groups here once you create them in TestFlight:
+        # beta_groups:
+        #   - Stix Beta
