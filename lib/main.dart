@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:receive_sharing_intent/receive_sharing_intent.dart';
 
@@ -8,6 +9,7 @@ import 'data/stix_repository.dart';
 import 'screens/home_screen.dart';
 import 'screens/save_to_stix_screen.dart';
 import 'theme.dart';
+import 'widgets/quick_save_sheet.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,12 +90,24 @@ class _ShareGateState extends State<_ShareGate> {
     _routing = true;
     // Defer to the next frame so a Navigator is definitely available.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => SaveToStixScreen(sharedText: shared),
-        ),
-      );
-      _routing = false;
+      try {
+        // Compact one-tap card so the user barely leaves their feed.
+        final outcome = await QuickSaveSheet.show(context, shared);
+        if (outcome == QuickSaveOutcome.details && mounted) {
+          // They wanted to add a title/note — hand off to the full editor.
+          await Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => SaveToStixScreen(sharedText: shared),
+            ),
+          );
+        }
+        // Drop back to the app the post came from (e.g. TikTok).
+        await SystemNavigator.pop();
+      } catch (e) {
+        debugPrint('Stix: failed to handle shared content: $e');
+      } finally {
+        _routing = false;
+      }
     });
   }
 
