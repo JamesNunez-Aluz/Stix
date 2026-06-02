@@ -34,7 +34,7 @@ works), add the Share Extension later — skips the Mac step for now.
 
 ## 📱 Android improvements — backlog / ideas
 (Add new ones here as we go.)
-- [ ] _(in progress — see what we decide next)_
+- [x] **Quick Save** — sharing a post now pops a compact one-tap card (pick a jar → saved → back to your feed instantly), instead of the full-screen takeover. Verified end-to-end.
 - [ ] Edit an existing idea
 - [ ] Reorder jars
 - [ ] Search across jars
